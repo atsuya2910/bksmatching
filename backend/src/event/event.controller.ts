@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
-import { Event } from '../../generated/prisma';
+import { Event } from '@prisma/client';
 
 @Controller('events')
 export class EventController {

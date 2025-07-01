@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Tag } from '../../generated/prisma';
+import { Tag } from '@prisma/client';
 
 export interface CreateTagDto {
   name: string;

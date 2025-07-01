@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Event } from '../../generated/prisma';
+import { Event } from '@prisma/client';
 
 export interface EventSearchOptions {
   search?: string;

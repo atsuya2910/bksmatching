@@ -9,6 +9,20 @@ interface User {
   name: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  color: string;
+  icon?: string;
+}
+
+interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 interface Event {
   id: number;
   title: string;
@@ -16,8 +30,11 @@ interface Event {
   location: string;
   eventDate: string;
   organizerId: number;
-  participants: User[]; // Add participants to Event interface
+  categoryId?: number;
+  participants: User[];
   organizer?: User;
+  category?: Category;
+  tags?: Tag[];
 }
 
 export default function Home() {
