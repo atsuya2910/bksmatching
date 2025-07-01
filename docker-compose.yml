@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # NestJS Backend Service
+  backend:
+    build:
+      context: ./backend
+    container_name: bksmatching-backend
+    ports:
+      - "4000:4000"
+    volumes:
+      # ホストのソースコードをコンテナにマウントしてホットリロードを有効化
+      - ./backend:/usr/src/app
+      # node_modulesはホストと共有しない
+      - /usr/src/app/node_modules
+    environment:
+      # .envファイルからデータベース接続情報を読み込む
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      - PORT=4000
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  # Next.js Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+    container_name: bksmatching-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # ホストのソースコードをコンテナにマウントしてホットリロードを有効化
+      - ./frontend:/usr/src/app
+      # node_modulesはホストと共有しない
+      - /usr/src/app/node_modules
+    environment:
+      # ブラウザからバックエンドAPIを叩くためのURL
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # PostgreSQL Database Service
+  db:
+    image: postgres:15-alpine
+    container_name: bksmatching-db
+    ports:
+      - "5432:5432"
+    environment:
+      # .envファイルからユーザー名、パスワード、DB名を読み込む
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      # DBのデータを永続化するための名前付きボリューム
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+# 名前付きボリュームの定義
+volumes:
+  postgres_data:
