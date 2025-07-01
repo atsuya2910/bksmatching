@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Param, Put, Delete } from '@nestjs/common';
-import { EventService } from './event.service';
+import { Controller, Get, Post, Body, UseGuards, Request, Param, Put, Delete, Query } from '@nestjs/common';
+import { EventService, EventSearchOptions } from './event.service';
 import { PrismaService } from '../prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -17,19 +17,41 @@ export class EventController {
     @Body() createEventDto: CreateEventDto,
   ): Promise<Event> {
     console.log('req.user:', req.user);
-    const { title, description, location, eventDate } = createEventDto;
+    const { title, description, location, eventDate, categoryId, tagIds } = createEventDto;
     return this.eventService.createEvent({
       title,
       description,
       location,
       eventDate: new Date(eventDate),
       organizerId: req.user.sub,
+      categoryId,
+      tagIds,
     });
   }
 
   @Get()
-  async getEvents(): Promise<Event[]> {
-    return this.eventService.getEvents();
+  async getEvents(
+    @Query('search') search?: string,
+    @Query('location') location?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('tags') tags?: string,
+    @Query('sortBy') sortBy?: 'eventDate' | 'createdAt' | 'title',
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ): Promise<Event[]> {
+    const options: EventSearchOptions = {
+      search,
+      location,
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+      categoryId: categoryId ? parseInt(categoryId, 10) : undefined,
+      tags: tags ? tags.split(',') : undefined,
+      sortBy,
+      sortOrder,
+    };
+    
+    return this.eventService.getEvents(options);
   }
 
   @Get(':id')

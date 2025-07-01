@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { fetchEvents, createEvent, login, signup, fetchEventById, updateEvent, deleteEvent, joinEvent, leaveEvent } from '../lib/api';
+import { fetchEvents, createEvent, login, signup, fetchEventById, updateEvent, deleteEvent, joinEvent, leaveEvent, EventSearchOptions } from '../lib/api';
 
 interface User {
   id: number;
@@ -17,6 +17,7 @@ interface Event {
   eventDate: string;
   organizerId: number;
   participants: User[]; // Add participants to Event interface
+  organizer?: User;
 }
 
 export default function Home() {
@@ -37,6 +38,15 @@ export default function Home() {
   const [editDescription, setEditDescription] = useState('');
   const [editLocation, setEditLocation] = useState('');
   const [editEventDate, setEditEventDate] = useState('');
+
+  // 検索・フィルタリング用のstate
+  const [searchText, setSearchText] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState<'eventDate' | 'createdAt' | 'title'>('eventDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -64,13 +74,35 @@ export default function Home() {
     }
   }, [selectedEvent]);
 
-  const loadEvents = async () => {
+  const loadEvents = async (searchOptions?: EventSearchOptions) => {
     try {
-      const data = await fetchEvents();
+      const data = await fetchEvents(searchOptions);
       setEvents(data);
     } catch (error: any) {
       setMessage(`Error loading events: ${error.message}`);
     }
+  };
+
+  const handleSearch = () => {
+    const searchOptions: EventSearchOptions = {
+      search: searchText || undefined,
+      location: searchLocation || undefined,
+      dateFrom: dateFrom || undefined,
+      dateTo: dateTo || undefined,
+      sortBy,
+      sortOrder,
+    };
+    loadEvents(searchOptions);
+  };
+
+  const handleClearFilters = () => {
+    setSearchText('');
+    setSearchLocation('');
+    setDateFrom('');
+    setDateTo('');
+    setSortBy('eventDate');
+    setSortOrder('asc');
+    loadEvents();
   };
 
   const handleEventClick = async (id: number) => {
@@ -317,18 +349,113 @@ export default function Home() {
         </div>
       )}
 
+      {/* 検索・フィルタリングセクション */}
+      <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="イベントを検索..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="border p-2 rounded flex-1"
+          />
+          <input
+            type="text"
+            placeholder="場所で検索..."
+            value={searchLocation}
+            onChange={(e) => setSearchLocation(e.target.value)}
+            className="border p-2 rounded flex-1"
+          />
+          <button
+            onClick={handleSearch}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          >
+            検索
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            {showFilters ? '詳細フィルタを隠す' : '詳細フィルタ'}
+          </button>
+        </div>
+
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 p-3 bg-white rounded border">
+            <div>
+              <label className="block text-sm font-medium mb-1">開始日</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">終了日</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">並び順</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as 'eventDate' | 'createdAt' | 'title')}
+                className="border p-2 rounded w-full"
+              >
+                <option value="eventDate">イベント日時</option>
+                <option value="createdAt">作成日時</option>
+                <option value="title">タイトル</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">順序</label>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                className="border p-2 rounded w-full"
+              >
+                <option value="asc">昇順</option>
+                <option value="desc">降順</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-4 flex gap-2 mt-2">
+              <button
+                onClick={handleSearch}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              >
+                フィルタを適用
+              </button>
+              <button
+                onClick={handleClearFilters}
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                フィルタをクリア
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <h2 className="text-xl font-semibold mb-2">Events</h2>
       {events.length === 0 ? (
         <p>No events found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {events.map((event) => (
-            <div key={event.id} className="border p-4 rounded shadow cursor-pointer" onClick={() => handleEventClick(event.id)}>
+            <div key={event.id} className="border p-4 rounded shadow cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleEventClick(event.id)}>
               <h3 className="text-lg font-bold">{event.title}</h3>
-              <p className="text-gray-700">{event.description}</p>
-              <p className="text-gray-600 text-sm">Location: {event.location}</p>
-              <p className="text-gray-600 text-sm">Date: {new Date(event.eventDate).toLocaleString()}</p>
-              <p className="text-gray-600 text-sm">Participants: {event.participants?.length || 0}</p>
+              <p className="text-gray-700 text-sm mb-2">{event.description.length > 100 ? event.description.substring(0, 100) + '...' : event.description}</p>
+              <p className="text-gray-600 text-sm">📍 {event.location}</p>
+              <p className="text-gray-600 text-sm">📅 {new Date(event.eventDate).toLocaleString()}</p>
+              <p className="text-gray-600 text-sm">👥 参加者: {event.participants?.length || 0}人</p>
+              {event.organizer && (
+                <p className="text-gray-600 text-xs mt-1">主催者: {event.organizer.name}</p>
+              )}
             </div>
           ))}
         </div>

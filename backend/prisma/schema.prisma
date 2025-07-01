@@ -19,6 +19,24 @@ model User {
   attendedEvents  Event[]  @relation("AttendedBy")
 }
 
+model Category {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  color     String   // HEXカラーコード（例: #FF5722）
+  icon      String?  // アイコン名（例: 🎵, 💻, 🏃‍♂️）
+  createdAt DateTime @default(now())
+  events    Event[]
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  events    Event[]  @relation("EventTags")
+}
+
 model Event {
   id           Int      @id @default(autoincrement())
   title        String
@@ -28,6 +46,9 @@ model Event {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   organizerId  Int
+  categoryId   Int?
   organizer    User     @relation("OrganizedBy", fields: [organizerId], references: [id])
+  category     Category? @relation(fields: [categoryId], references: [id])
   participants User[]   @relation("AttendedBy")
+  tags         Tag[]    @relation("EventTags")
 }
