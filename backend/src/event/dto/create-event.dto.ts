@@ -1,4 +1,4 @@
-import { IsString, IsDateString, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsString, IsDateString, IsNotEmpty, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
@@ -16,4 +16,13 @@ export class CreateEventDto {
   @IsDateString()
   @IsNotEmpty()
   eventDate: string;
+
+  @IsOptional()
+  @IsNumber()
+  categoryId?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  tagIds?: number[];
 }
